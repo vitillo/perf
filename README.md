@@ -1,5 +1,5 @@
-perf
-====
+perf to callgrind converter
+==========================
 
 Features:
 - multiple event support
