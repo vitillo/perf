@@ -129,18 +129,6 @@ static void cg_sym_events_printf(FILE *output, struct symbol* sym,
 	last_line = line;
 }
 
-static void cg_sym_total_printf(FILE *output, struct annotation *notes)
-{
-	int idx;
-
-	fprintf(output, "0 0");
-	for (idx = 0; idx < notes->src->nr_histograms; idx++) {
-		u64 cnt = annotation__histogram(notes, idx)->sum;
-		fprintf(output, " %" PRIu64, cnt);
-	}
-	fprintf(output, "\n");
-}
-
 static inline bool cg_check_events(struct annotation *notes, u64 offset) {
 	int idx;
 
@@ -151,37 +139,46 @@ static inline bool cg_check_events(struct annotation *notes, u64 offset) {
 	return false;
 }
 
+void cg_cnv_unresolved(FILE *output, u32 ev_id, struct hist_entry *he)
+{
+	u32 idx;
+
+	fprintf(output, "ob=%s\n", he->ms.map->dso->long_name);
+	fprintf(output, "fn=%#" PRIx64 "\n", he->ip);
+	
+	fprintf(output, "0 0");
+	for (idx = 0; idx < ev_id; idx++)
+		fprintf(output, " 0");
+	fprintf(output, " %" PRIu32, he->stat.nr_events);
+	fprintf(output, "\n");
+}
+
 int cg_cnv_symbol(FILE *output, struct symbol *sym, struct map *map)
 {
 	const char *filename = map->dso->long_name;
 	struct annotation *notes = symbol__annotation(sym);
 	u64 sym_len = sym->end - sym->start, i;
-	bool has_symbols = true;
 
 	if (addr2line_init(map->dso->long_name))
-		has_symbols = false;
+		return -EINVAL;
 
 	fprintf(output, "ob=%s\n", filename);
 	fprintf(output, "fn=%s\n", sym->name);
 
-	if(has_symbols){
-		for (i = 0; i < sym_len; i++) {
-			if (cg_check_events(notes, i)) {
-				cg_sym_header_printf(output, sym, map, notes, i);
-				break;
-			}
+	for (i = 0; i < sym_len; i++) {
+		if (cg_check_events(notes, i)) {
+			cg_sym_header_printf(output, sym, map, notes, i);
+			break;
 		}
-
-		for (++i; i < sym_len; i++) {
-			if (cg_check_events(notes, i)) {
-				cg_sym_events_printf(output, sym, map, notes, i);
-			}
-		}
-
-		addr2line_cleanup();
-	}else{
-		cg_sym_total_printf(output, notes);
 	}
+
+	for (++i; i < sym_len; i++) {
+		if (cg_check_events(notes, i)) {
+			cg_sym_events_printf(output, sym, map, notes, i);
+		}
+	}
+
+	addr2line_cleanup();
 
 	return 0;
 }

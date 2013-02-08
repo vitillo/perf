@@ -69,7 +69,7 @@ static int process_sample_event(struct perf_tool *tool,
 	return 0;
 }
 
-static void hists__find_annotations(struct hists *self, struct perf_convert *cnv)
+static void hists__find_annotations(struct hists *self, struct perf_convert *cnv, u32 ev_id)
 {
 	struct rb_node *nd = rb_first(&self->entries);
 	int key = K_RIGHT;
@@ -78,10 +78,13 @@ static void hists__find_annotations(struct hists *self, struct perf_convert *cnv
 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
 		struct annotation *notes;
 
-		if (he->ms.sym == NULL || he->ms.map->dso->annotate_warned)
+		if (he->ms.sym == NULL || he->ms.map->dso->annotate_warned){
+			cg_cnv_unresolved(cnv->output_file, ev_id, he);
 			goto find_next;
+		}
 
 		notes = symbol__annotation(he->ms.sym);
+
 		if (notes->src == NULL) {
 find_next:
 			if (key == K_LEFT)
@@ -103,6 +106,7 @@ static int __cmd_convert(struct perf_convert *cnv)
 	int ret;
 	struct perf_session *session;
 	struct perf_evsel *pos;
+	u32 ev_id = 0;
 
 	session = perf_session__new(cnv->input_name, O_RDONLY,
 				    cnv->force, false, &cnv->tool);
@@ -131,7 +135,7 @@ static int __cmd_convert(struct perf_convert *cnv)
 		if (nr_samples > 0) {
 			hists__collapse_resort(hists);
 			hists__output_resort(hists);
-			hists__find_annotations(hists, cnv);
+			hists__find_annotations(hists, cnv, ev_id++);
 		}
 	}
 
