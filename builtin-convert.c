@@ -61,15 +61,15 @@ static int process_sample_event(struct perf_tool *tool,
 		return 0;
 
 	if (!al.filtered && cg_cnv_sample(evsel, sample, &al, machine)) {
-		pr_warning("problem incrementing symbol count, "
-			   "skipping event\n");
+		pr_warning("problem incrementing symbol count, skipping event\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-static void hists__find_annotations(struct hists *self, struct perf_convert *cnv, u32 ev_id)
+static void hists__find_annotations(struct hists *self, struct perf_convert *cnv,
+				    u32 ev_id)
 {
 	struct rb_node *nd = rb_first(&self->entries);
 	int key = K_RIGHT;
@@ -78,7 +78,7 @@ static void hists__find_annotations(struct hists *self, struct perf_convert *cnv
 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
 		struct annotation *notes;
 
-		if (he->ms.sym == NULL || he->ms.map->dso->annotate_warned){
+		if (he->ms.sym == NULL || he->ms.map->dso->annotate_warned) {
 			cg_cnv_unresolved(cnv->output_file, ev_id, he);
 			goto find_next;
 		}

@@ -40,30 +40,31 @@ static int slurp_symtab(void)
 	long symcount;
 	bfd_boolean dynamic = FALSE;
 
-	if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0)
-		return bfd_fatal(bfd_get_filename (abfd));
+	if ((bfd_get_file_flags(abfd) & HAS_SYMS) == 0)
+		return bfd_fatal(bfd_get_filename(abfd));
 
-	storage = bfd_get_symtab_upper_bound (abfd);
+	storage = bfd_get_symtab_upper_bound(abfd);
 	if (storage == 0) {
-		storage = bfd_get_dynamic_symtab_upper_bound (abfd);
+		storage = bfd_get_dynamic_symtab_upper_bound(abfd);
 		dynamic = TRUE;
 	}
 	if (storage < 0)
-		return bfd_fatal(bfd_get_filename (abfd));
+		return bfd_fatal(bfd_get_filename(abfd));
 
 	syms = (asymbol **) malloc(storage);
 	if (dynamic)
-		symcount = bfd_canonicalize_dynamic_symtab (abfd, syms);
+		symcount = bfd_canonicalize_dynamic_symtab(abfd, syms);
 	else
-		symcount = bfd_canonicalize_symtab (abfd, syms);
+		symcount = bfd_canonicalize_symtab(abfd, syms);
 
 	if (symcount < 0)
-		return bfd_fatal(bfd_get_filename (abfd));
+		return bfd_fatal(bfd_get_filename(abfd));
 
 	return 0;
 }
 
-static void find_address_in_section(bfd *self, asection *section, void *data ATTRIBUTE_UNUSED)
+static void find_address_in_section(bfd *self, asection *section,
+				    void *data ATTRIBUTE_UNUSED)
 {
 	bfd_vma vma;
 	bfd_size_type size;
@@ -71,18 +72,18 @@ static void find_address_in_section(bfd *self, asection *section, void *data ATT
 	if (found)
 		return;
 
-	if ((bfd_get_section_flags (abfd, section) & SEC_ALLOC) == 0)
+	if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
 		return;
 
-	vma = bfd_get_section_vma (abfd, section);
+	vma = bfd_get_section_vma(abfd, section);
 	if (pc < vma)
 		return;
 
-	size = bfd_get_section_size (section);
+	size = bfd_get_section_size(section);
 	if (pc >= vma + size)
 		return;
 
-	found = bfd_find_nearest_line (self, section, syms, pc - vma,
+	found = bfd_find_nearest_line(self, section, syms, pc - vma,
 			&filename, &functionname, &line);
 }
 
@@ -93,7 +94,7 @@ int addr2line_init(const char *file_name)
 		return -1;
 
 	if (!bfd_check_format(abfd, bfd_object))
-		return bfd_fatal(bfd_get_filename (abfd));
+		return bfd_fatal(bfd_get_filename(abfd));
 
 	return slurp_symtab();
 
@@ -113,7 +114,7 @@ void addr2line_cleanup(void)
 int addr2line_inline(const char **file, unsigned *line_nr)
 {
 
-	found = bfd_find_inliner_info (abfd, &filename, &functionname, &line);
+	found = bfd_find_inliner_info(abfd, &filename, &functionname, &line);
 	*file = filename;
 	*line_nr = line;
 

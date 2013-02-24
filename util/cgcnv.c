@@ -10,7 +10,7 @@
 #include <linux/list.h>
 #include <linux/rbtree.h>
 
-static const char* last_source_name;
+static const char *last_source_name;
 static unsigned last_line;
 static u64 last_off;
 
@@ -24,7 +24,7 @@ int cg_cnv_header(FILE *output, struct perf_session *session)
 		struct hists *hists = &pos->hists;
 		u32 nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
 
-		if (nr_samples > 0){
+		if (nr_samples > 0) {
 			evname = perf_evsel__name(pos);
 			fprintf(output, " %s", evname);
 		}
@@ -35,7 +35,7 @@ int cg_cnv_header(FILE *output, struct perf_session *session)
 }
 
 int cg_cnv_sample(struct perf_evsel *evsel, struct perf_sample *sample,
-    		  struct addr_location *al, struct machine *machine){
+		  struct addr_location *al, struct machine *machine){
 	struct hist_entry *he;
 	int ret = 0;
 
@@ -69,14 +69,14 @@ int cg_cnv_sample(struct perf_evsel *evsel, struct perf_sample *sample,
 	return ret;
 }
 
-static void cg_sym_header_printf(FILE *output, struct symbol* sym, 
-				 struct map* map, struct annotation *notes, 
+static void cg_sym_header_printf(FILE *output, struct symbol *sym,
+				 struct map *map, struct annotation *notes,
 				 u64 offset)
 {
 	int idx, ret, ret_callee, ret_caller = 0;
 	u64 address = map__rip_2objdump(map, sym->start) + offset;
 	unsigned caller_line;
-	const char* caller_name;
+	const char *caller_name;
 
 	ret_callee = addr2line(address, &last_source_name, &last_line);
 	while ((ret = addr2line_inline(&caller_name, &caller_line)))
@@ -92,30 +92,32 @@ static void cg_sym_header_printf(FILE *output, struct symbol* sym,
 		fprintf(output, "fl=\n");
 
 	fprintf(output, "%#" PRIx64 " %u", address, last_line);
-	for (idx = 0; idx < notes->src->nr_histograms; idx++) {
-		fprintf(output, " %" PRIu64, annotation__histogram(notes, idx)->addr[offset]);
-	}
+	for (idx = 0; idx < notes->src->nr_histograms; idx++)
+		fprintf(output, " %" PRIu64,
+			annotation__histogram(notes, idx)->addr[offset]);
 
 	fprintf(output, "\n");
 	last_off = offset;
 }
 
-static void cg_sym_events_printf(FILE *output, struct symbol* sym, 
-				 struct map* map, struct annotation *notes, 
+static void cg_sym_events_printf(FILE *output, struct symbol *sym,
+				 struct map *map, struct annotation *notes,
 				 u64 offset)
 {
 	int ret, idx;
 	unsigned line;
-	const char* filename;
+	const char *filename;
 
-	ret = addr2line(map__rip_2objdump(map, sym->start) + offset, &filename, &line);
+	ret = addr2line(map__rip_2objdump(map, sym->start) + offset,
+			&filename, &line);
 	if (filename && last_source_name && strcmp(filename, last_source_name)) {
 		fprintf(output, "fl=%s\n", filename);
 		last_source_name = filename;
 	}
 
 	if (ret)
-		fprintf(output, "+%" PRIu64 " %+d", offset - last_off, (int)(line - last_line));
+		fprintf(output, "+%" PRIu64 " %+d", offset - last_off,
+			(int)(line - last_line));
 	else
 		fprintf(output, "+%" PRIu64 " %u", offset - last_off, line);
 
@@ -129,7 +131,8 @@ static void cg_sym_events_printf(FILE *output, struct symbol* sym,
 	last_line = line;
 }
 
-static inline bool cg_check_events(struct annotation *notes, u64 offset) {
+static inline bool cg_check_events(struct annotation *notes, u64 offset)
+{
 	int idx;
 
 	for (idx = 0; idx < notes->src->nr_histograms; idx++)
@@ -145,7 +148,7 @@ void cg_cnv_unresolved(FILE *output, u32 ev_id, struct hist_entry *he)
 
 	fprintf(output, "ob=%s\n", he->ms.map->dso->long_name);
 	fprintf(output, "fn=%#" PRIx64 "\n", he->ip);
-	
+
 	fprintf(output, "0 0");
 	for (idx = 0; idx < ev_id; idx++)
 		fprintf(output, " 0");
@@ -173,9 +176,8 @@ int cg_cnv_symbol(FILE *output, struct symbol *sym, struct map *map)
 	}
 
 	for (++i; i < sym_len; i++) {
-		if (cg_check_events(notes, i)) {
+		if (cg_check_events(notes, i))
 			cg_sym_events_printf(output, sym, map, notes, i);
-		}
 	}
 
 	addr2line_cleanup();
